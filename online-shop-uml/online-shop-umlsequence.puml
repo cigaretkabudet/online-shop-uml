@@ -1,0 +1,48 @@
+@startuml
+title Диаграмма последовательности — Оформление заказа и оплата
+
+actor Покупатель
+participant "Корзина" as Cart
+participant "Склад" as Stock
+participant "Система оплаты" as Pay
+participant "Служба доставки" as Delivery
+
+Покупатель -> Cart : оформитьЗаказ()
+activate Cart
+Cart -> Stock : проверитьНаличие(товары)
+activate Stock
+Stock --> Cart : наличие подтверждено
+deactivate Stock
+
+alt все товары в наличии
+  Cart -> Stock : зарезервировать(товары)
+  activate Stock
+  Stock --> Cart : резерв создан
+  deactivate Stock
+  Cart -> Pay : запроситьОплату(сумма)
+  activate Pay
+  Pay --> Покупатель : страница оплаты
+  Покупатель -> Pay : подтвердитьОплату(данные карты)
+  alt оплата успешна
+    Pay --> Cart : платёж подтверждён
+    deactivate Pay
+    Cart -> Delivery : создатьДоставку(заказ)
+    activate Delivery
+    Delivery --> Cart : номер доставки
+    deactivate Delivery
+    Cart --> Покупатель : заказ подтверждён
+  else оплата отклонена
+    Pay --> Cart : ошибка оплаты
+    deactivate Pay
+    Cart -> Stock : снятьРезерв(товары)
+    activate Stock
+    Stock --> Cart : резерв снят
+    deactivate Stock
+    Cart --> Покупатель : сообщение об ошибке
+  end
+else товара нет
+  Stock --> Cart : нет в наличии
+  Cart --> Покупатель : предложить замену/отмену
+end
+deactivate Cart
+@enduml
